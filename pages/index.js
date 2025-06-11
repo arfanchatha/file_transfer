@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Container, Row, Col, Form, Button, Card, Alert, Spinner, Modal, ListGroup } from 'react-bootstrap';
 import axios from 'axios';
-import { FaGoogle, FaVideo, FaCloudUploadAlt, FaHistory, FaFolder, FaFolderOpen, FaInfoCircle, FaTimes } from 'react-icons/fa';
+import { FaGoogle, FaVideo, FaCloudUploadAlt, FaHistory, FaFolder, FaFolderOpen, FaInfoCircle, FaTimes, FaShieldAlt } from 'react-icons/fa';
 import { useGoogleLogin } from '@react-oauth/google';
+import Link from 'next/link';
+import Head from 'next/head';
 
 // API URL for Next.js API routes
 const API_URL = '/api';
@@ -679,262 +681,276 @@ export default function Home() {
   }, [isAuthenticated, accessToken, verifyDrivePermissions]);
 
   return (
-    <Container className="py-5">
-      <Row className="mb-4">
-        <Col>
-          <h1 className="text-center mb-4">
-            <FaVideo className="me-2" />
-            Loom to Google Drive Transfer
-          </h1>
-          <p className="text-center text-muted">
-            Transfer your Loom videos directly to Google Drive without downloading
-          </p>
-        </Col>
-      </Row>
-
-      {!isGoogleConfigured && <ConfigurationMessage />}
-
-      {isGoogleConfigured && !isAuthenticated ? (
-        <Row className="justify-content-center">
-          <Col md={6}>
-            <Card className="shadow-sm">
-              <Card.Body className="text-center p-5">
-                <h3 className="mb-4">Get Started</h3>
-                <p>Login with Google to access your Drive</p>
-                <Button 
-                  variant="primary" 
-                  size="lg" 
-                  onClick={() => login()}
-                  disabled={isLoading}
-                  className="d-flex align-items-center justify-content-center mx-auto"
-                >
-                  {isLoading ? (
-                    <>
-                      <Spinner animation="border" size="sm" className="me-2" />
-                      Connecting...
-                    </>
-                  ) : (
-                    <>
-                      <FaGoogle className="me-2" /> Login with Google
-                    </>
-                  )}
-                </Button>
-                
-                {/* Add the OAuth error message */}
-                {oauthError && <OAuthErrorMessage />}
-              </Card.Body>
-            </Card>
+    <>
+      <Head>
+        <title>Loom to Google Drive Transfer</title>
+        <meta name="description" content="Transfer your Loom videos directly to Google Drive without downloading" />
+        <link rel="icon" href="/assets/filelift.png" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </Head>
+      <Container className="py-5">
+        <Row className="mb-4">
+          <Col>
+            <h1 className="text-center mb-4">
+              <FaVideo className="me-2" />
+              Loom to Google Drive Transfer
+            </h1>
+            <p className="text-center text-muted">
+              Transfer your Loom videos directly to Google Drive without downloading
+            </p>
           </Col>
         </Row>
-      ) : isGoogleConfigured ? (
-        <Row>
-          <Col lg={8} className="mx-auto">
-            <Card className="shadow-sm mb-4">
-              <Card.Body className="p-4">
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                  <h3 className="mb-0">Transfer Video</h3>
-                  <div className="d-flex align-items-center">
-                    {userInfo && (
-                      <div className="me-3 d-flex align-items-center">
-                        {userInfo.picture && (
-                          <img 
-                            src={userInfo.picture} 
-                            alt={userInfo.name} 
-                            className="rounded-circle me-2" 
-                            style={{ width: '32px', height: '32px' }} 
-                          />
-                        )}
-                        <span className="d-none d-md-inline">{userInfo.name}</span>
-                      </div>
+
+        {!isGoogleConfigured && <ConfigurationMessage />}
+
+        {isGoogleConfigured && !isAuthenticated ? (
+          <Row className="justify-content-center">
+            <Col md={6}>
+              <Card className="shadow-sm">
+                <Card.Body className="text-center p-5">
+                  <h3 className="mb-4">Get Started</h3>
+                  <p>Login with Google to access your Drive</p>
+                  <Button 
+                    variant="primary" 
+                    size="lg" 
+                    onClick={() => login()}
+                    disabled={isLoading}
+                    className="d-flex align-items-center justify-content-center mx-auto"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Spinner animation="border" size="sm" className="me-2" />
+                        Connecting...
+                      </>
+                    ) : (
+                      <>
+                        <FaGoogle className="me-2" /> Login with Google
+                      </>
                     )}
-                    <Button variant="outline-secondary" size="sm" onClick={handleLogout}>
-                      Logout
-                    </Button>
-                  </div>
-                </div>
-
-                {error && <Alert variant="danger">{error}</Alert>}
-                {status && <Alert variant="success">{status}</Alert>}
-
-                <Form onSubmit={handleShowVideoDetails}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Loom Video URL</Form.Label>
-                    <Form.Control
-                      type="text"
-                      placeholder="https://www.loom.com/share/..."
-                      value={loomUrl}
-                      onChange={(e) => setLoomUrl(e.target.value)}
-                      required
-                    />
-                    <Form.Text className="text-muted">
-                      Paste the share link from Loom
-                    </Form.Text>
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>File Name (optional)</Form.Label>
-                    <Form.Control
-                      type="text"
-                      placeholder="Will use original Loom title if empty"
-                      value={fileName}
-                      onChange={(e) => setFileName(e.target.value)}
-                    />
-                    <Form.Text className="text-muted">
-                      Leave empty to use the original Loom video title
-                    </Form.Text>
-                  </Form.Group>
-
-                  <Form.Group className="mb-4">
-                    <Form.Label>Google Drive Folder</Form.Label>
-                    <div className="d-flex">
-                      <Form.Control
-                        type="text"
-                        placeholder="Selected folder"
-                        value={folderName}
-                        disabled
-                        className="me-2"
-                      />
-                      <Button 
-                        variant="outline-primary" 
-                        onClick={openFolderSelector}
-                        className="d-flex align-items-center"
-                      >
-                        <FaFolderOpen className="me-2" />
-                        Browse
+                  </Button>
+                  
+                  {/* Add the OAuth error message */}
+                  {oauthError && <OAuthErrorMessage />}
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        ) : isGoogleConfigured ? (
+          <Row>
+            <Col lg={8} className="mx-auto">
+              <Card className="shadow-sm mb-4">
+                <Card.Body className="p-4">
+                  <div className="d-flex justify-content-between align-items-center mb-4">
+                    <h3 className="mb-0">Transfer Video</h3>
+                    <div className="d-flex align-items-center">
+                      {userInfo && (
+                        <div className="me-3 d-flex align-items-center">
+                          {userInfo.picture && (
+                            <img 
+                              src={userInfo.picture} 
+                              alt={userInfo.name} 
+                              className="rounded-circle me-2" 
+                              style={{ width: '32px', height: '32px' }} 
+                            />
+                          )}
+                          <span className="d-none d-md-inline">{userInfo.name}</span>
+                        </div>
+                      )}
+                      <Button variant="outline-secondary" size="sm" onClick={handleLogout}>
+                        Logout
                       </Button>
                     </div>
-                    <Form.Text className="text-muted">
-                      Select where to save your video in Google Drive
-                    </Form.Text>
-                  </Form.Group>
+                  </div>
 
-                  <div className="d-grid">
-                    {isLoading ? (
-                      <div className="d-flex gap-2">
-                        <Button 
-                          variant="primary" 
+                  {error && <Alert variant="danger">{error}</Alert>}
+                  {status && <Alert variant="success">{status}</Alert>}
+
+                  <Form onSubmit={handleShowVideoDetails}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Loom Video URL</Form.Label>
+                      <Form.Control
+                        type="text"
+                        placeholder="https://www.loom.com/share/..."
+                        value={loomUrl}
+                        onChange={(e) => setLoomUrl(e.target.value)}
+                        required
+                      />
+                      <Form.Text className="text-muted">
+                        Paste the share link from Loom
+                      </Form.Text>
+                    </Form.Group>
+
+                    <Form.Group className="mb-3">
+                      <Form.Label>File Name (optional)</Form.Label>
+                      <Form.Control
+                        type="text"
+                        placeholder="Will use original Loom title if empty"
+                        value={fileName}
+                        onChange={(e) => setFileName(e.target.value)}
+                      />
+                      <Form.Text className="text-muted">
+                        Leave empty to use the original Loom video title
+                      </Form.Text>
+                    </Form.Group>
+
+                    <Form.Group className="mb-4">
+                      <Form.Label>Google Drive Folder</Form.Label>
+                      <div className="d-flex">
+                        <Form.Control
+                          type="text"
+                          placeholder="Selected folder"
+                          value={folderName}
                           disabled
-                          className="flex-grow-1"
-                        >
-                          <Spinner animation="border" size="sm" className="me-2" />
-                          {transferProgress || 'Transferring...'}
-                        </Button>
+                          className="me-2"
+                        />
                         <Button 
-                          variant="outline-danger" 
-                          onClick={handleCancelTransfer}
-                          disabled={isCancelling || showCancelConfirmModal}
-                          className="d-flex align-items-center px-3"
-                          title="Cancel Transfer"
+                          variant="outline-primary" 
+                          onClick={openFolderSelector}
+                          className="d-flex align-items-center"
                         >
-                          {isCancelling ? (
-                            <Spinner animation="border" size="sm" />
-                          ) : (
-                            <FaTimes />
-                          )}
+                          <FaFolderOpen className="me-2" />
+                          Browse
                         </Button>
                       </div>
-                    ) : (
-                      <Button 
-                        variant="primary" 
-                        type="submit" 
-                        size="lg"
-                        disabled={isLoading || loadingVideoDetails}
-                      >
-                        {loadingVideoDetails ? (
-                          <>
+                      <Form.Text className="text-muted">
+                        Select where to save your video in Google Drive
+                      </Form.Text>
+                    </Form.Group>
+
+                    <div className="d-grid">
+                      {isLoading ? (
+                        <div className="d-flex gap-2">
+                          <Button 
+                            variant="primary" 
+                            disabled
+                            className="flex-grow-1"
+                          >
                             <Spinner animation="border" size="sm" className="me-2" />
-                            Getting video details...
-                          </>
-                        ) : (
-                          <>
-                            <FaCloudUploadAlt className="me-2" />
-                            Transfer to Google Drive
-                          </>
-                        )}
-                      </Button>
-                    )}
+                            {transferProgress || 'Transferring...'}
+                          </Button>
+                          <Button 
+                            variant="outline-danger" 
+                            onClick={handleCancelTransfer}
+                            disabled={isCancelling || showCancelConfirmModal}
+                            className="d-flex align-items-center px-3"
+                            title="Cancel Transfer"
+                          >
+                            {isCancelling ? (
+                              <Spinner animation="border" size="sm" />
+                            ) : (
+                              <FaTimes />
+                            )}
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button 
+                          variant="primary" 
+                          type="submit" 
+                          size="lg"
+                          disabled={isLoading || loadingVideoDetails}
+                        >
+                          {loadingVideoDetails ? (
+                            <>
+                              <Spinner animation="border" size="sm" className="me-2" />
+                              Getting video details...
+                            </>
+                          ) : (
+                            <>
+                              <FaCloudUploadAlt className="me-2" />
+                              Transfer to Google Drive
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  </Form>
+                </Card.Body>
+              </Card>
+
+              <div className="text-center">
+                <p className="text-muted">
+                  This application transfers your Loom videos directly to your Google Drive
+                  without needing to download them first.
+                </p>
+                <div className="mt-3">
+                  <Link href="/privacy" className="text-muted text-decoration-none">
+                    <FaShieldAlt className="me-1" />
+                    Privacy Policy
+                  </Link>
+                </div>
+              </div>
+            </Col>
+          </Row>
+        ) : null}
+
+        {/* Folder selection modal */}
+        {folderSelectionModal}
+
+        {/* Video details confirmation modal */}
+        <Modal show={showVideoDetailsModal} onHide={() => setShowVideoDetailsModal(false)} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Confirm Transfer</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {videoDetails && (
+              <div>
+                <h5 className="mb-3">Video Details</h5>
+                
+                {/* Video thumbnail if available */}
+                {videoDetails.thumbnailUrl && (
+                  <div className="text-center mb-3">
+                    <img 
+                      src={videoDetails.thumbnailUrl} 
+                      alt="Video thumbnail" 
+                      className="img-fluid rounded"
+                      style={{ maxHeight: '200px' }}
+                    />
                   </div>
-                </Form>
-              </Card.Body>
-            </Card>
-
-            <div className="text-center">
-              <p className="text-muted">
-                This application transfers your Loom videos directly to your Google Drive
-                without needing to download them first.
-              </p>
-            </div>
-          </Col>
-        </Row>
-      ) : null}
-
-      {/* Folder selection modal */}
-      {folderSelectionModal}
-
-      {/* Video details confirmation modal */}
-      <Modal show={showVideoDetailsModal} onHide={() => setShowVideoDetailsModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Transfer</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {videoDetails && (
-            <div>
-              <h5 className="mb-3">Video Details</h5>
-              
-              {/* Video thumbnail if available */}
-              {videoDetails.thumbnailUrl && (
-                <div className="text-center mb-3">
-                  <img 
-                    src={videoDetails.thumbnailUrl} 
-                    alt="Video thumbnail" 
-                    className="img-fluid rounded"
-                    style={{ maxHeight: '200px' }}
-                  />
-                </div>
-              )}
-              
-              <div className="mb-3">
-                <strong>Title:</strong>
-                <div className="text-muted">{videoDetails.title}</div>
-              </div>
-              
-              <div className="mb-3">
-                <strong>Duration:</strong>
-                <div className="text-muted">{videoDetails.duration}</div>
-              </div>
-              
-              {videoDetails.fileSize && (
+                )}
+                
                 <div className="mb-3">
-                  <strong>File Size:</strong>
-                  <div className="text-muted">{videoDetails.fileSize.formatted}</div>
+                  <strong>Title:</strong>
+                  <div className="text-muted">{videoDetails.title}</div>
                 </div>
-              )}
-              
-              <div className="mb-3">
-                <strong>Destination:</strong>
-                <div className="text-muted">{folderName}</div>
+                
+                <div className="mb-3">
+                  <strong>Duration:</strong>
+                  <div className="text-muted">{videoDetails.duration}</div>
+                </div>
+                
+                {videoDetails.fileSize && (
+                  <div className="mb-3">
+                    <strong>File Size:</strong>
+                    <div className="text-muted">{videoDetails.fileSize.formatted}</div>
+                  </div>
+                )}
+                
+                <div className="mb-3">
+                  <strong>Destination:</strong>
+                  <div className="text-muted">{folderName}</div>
+                </div>
+                
+                <Alert variant="info" className="mt-3">
+                  <FaInfoCircle className="me-2" />
+                  This video will be transferred directly to your Google Drive without downloading to your device.
+                </Alert>
               </div>
-              
-              <Alert variant="info" className="mt-3">
-                <FaInfoCircle className="me-2" />
-                This video will be transferred directly to your Google Drive without downloading to your device.
-              </Alert>
-            </div>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowVideoDetailsModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleConfirmTransfer}>
-            <FaCloudUploadAlt className="me-2" />
-            Confirm Transfer
-          </Button>
-        </Modal.Footer>
-      </Modal>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowVideoDetailsModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleConfirmTransfer}>
+              <FaCloudUploadAlt className="me-2" />
+              Confirm Transfer
+            </Button>
+          </Modal.Footer>
+        </Modal>
 
-      {/* Cancel confirmation modal */}
-      {cancelConfirmationModal}
-    </Container>
+        {/* Cancel confirmation modal */}
+        {cancelConfirmationModal}
+      </Container>
+    </>
   );
 } 
