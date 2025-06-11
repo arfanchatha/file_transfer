@@ -733,6 +733,19 @@ export default function Home() {
                   {oauthError && <OAuthErrorMessage />}
                 </Card.Body>
               </Card>
+              
+              <div className="text-center mt-4">
+                <p className="text-muted">
+                  This application transfers your Loom videos directly to your Google Drive
+                  without needing to download them first.
+                </p>
+                <div className="mt-3">
+                  <Link href="/privacy" className="text-muted text-decoration-none">
+                    <FaShieldAlt className="me-1" />
+                    Privacy Policy
+                  </Link>
+                </div>
+              </div>
             </Col>
           </Row>
         ) : isGoogleConfigured ? (
@@ -872,12 +885,6 @@ export default function Home() {
                   This application transfers your Loom videos directly to your Google Drive
                   without needing to download them first.
                 </p>
-                <div className="mt-3">
-                  <Link href="/privacy" className="text-muted text-decoration-none">
-                    <FaShieldAlt className="me-1" />
-                    Privacy Policy
-                  </Link>
-                </div>
               </div>
             </Col>
           </Row>
