@@ -41,6 +41,11 @@ export default function Home() {
   // Cancel confirmation modal state
   const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
 
+  // Video details confirmation modal state
+  const [showVideoDetailsModal, setShowVideoDetailsModal] = useState(false);
+  const [videoDetails, setVideoDetails] = useState(null);
+  const [loadingVideoDetails, setLoadingVideoDetails] = useState(false);
+
   // AbortController for cancelling requests
   const abortControllerRef = useRef(null);
 
@@ -260,10 +265,66 @@ export default function Home() {
     setShowCancelConfirmModal(false);
   };
 
-  // Handle form submission
-  const handleTransfer = async (e) => {
+  // Handle showing video details modal before transfer
+  const handleShowVideoDetails = async (e) => {
     e.preventDefault();
     
+    if (!loomUrl) {
+      setError('Please enter a Loom URL');
+      return;
+    }
+
+    // Validate Loom URL format
+    if (!loomUrl.includes('loom.com')) {
+      setError('Please enter a valid Loom share URL');
+      return;
+    }
+
+    if (!accessToken) {
+      setError('Please login with Google first');
+      return;
+    }
+
+    setError('');
+    setLoadingVideoDetails(true);
+
+    try {
+      console.log('Getting video details...');
+      const response = await axios.post(`${API_URL}/video-details`, {
+        loomUrl
+      });
+
+      if (response.data.success) {
+        setVideoDetails(response.data.data);
+        setShowVideoDetailsModal(true);
+      } else {
+        setError('Failed to get video details. Please check the URL and try again.');
+      }
+    } catch (err) {
+      console.error('Error getting video details:', err);
+      const errorMessage = 
+        err.response?.data?.message || 
+        err.message || 
+        'Failed to get video details';
+      setError(errorMessage);
+    } finally {
+      setLoadingVideoDetails(false);
+    }
+  };
+
+  // Handle confirming transfer from the modal
+  const handleConfirmTransfer = () => {
+    setShowVideoDetailsModal(false);
+    handleTransfer();
+  };
+
+  // Handle form submission
+  const handleTransfer = async (e) => {
+    // If called from form submission, prevent default
+    if (e) {
+      e.preventDefault();
+    }
+
     if (!loomUrl) {
       setError('Please enter a Loom URL');
       return;
@@ -542,7 +603,7 @@ export default function Home() {
         <li>Enable the Google Drive API for your project</li>
         <li>Configure the OAuth consent screen (select "External")</li>
         <li>Create OAuth 2.0 credentials (Web application type)</li>
-        <li>Add <code>http://localhost:3000</code> to Authorized JavaScript origins and redirect URIs</li>
+        <li>Add <code>http://localhost:3000 || your-domain.com</code> to Authorized JavaScript origins and redirect URIs</li>
         <li>Create a <code>.env.local</code> file in the root folder with:
           <pre className="mt-2 p-2 bg-light">
             NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-client-id-here{'\n'}
@@ -695,7 +756,7 @@ export default function Home() {
                 {error && <Alert variant="danger">{error}</Alert>}
                 {status && <Alert variant="success">{status}</Alert>}
 
-                <Form onSubmit={handleTransfer}>
+                <Form onSubmit={handleShowVideoDetails}>
                   <Form.Group className="mb-3">
                     <Form.Label>Loom Video URL</Form.Label>
                     <Form.Control
@@ -777,10 +838,19 @@ export default function Home() {
                         variant="primary" 
                         type="submit" 
                         size="lg"
-                        disabled={isLoading}
+                        disabled={isLoading || loadingVideoDetails}
                       >
-                        <FaCloudUploadAlt className="me-2" />
-                        Transfer to Google Drive
+                        {loadingVideoDetails ? (
+                          <>
+                            <Spinner animation="border" size="sm" className="me-2" />
+                            Getting video details...
+                          </>
+                        ) : (
+                          <>
+                            <FaCloudUploadAlt className="me-2" />
+                            Transfer to Google Drive
+                          </>
+                        )}
                       </Button>
                     )}
                   </div>
@@ -800,6 +870,68 @@ export default function Home() {
 
       {/* Folder selection modal */}
       {folderSelectionModal}
+
+      {/* Video details confirmation modal */}
+      <Modal show={showVideoDetailsModal} onHide={() => setShowVideoDetailsModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Transfer</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {videoDetails && (
+            <div>
+              <h5 className="mb-3">Video Details</h5>
+              
+              {/* Video thumbnail if available */}
+              {videoDetails.thumbnailUrl && (
+                <div className="text-center mb-3">
+                  <img 
+                    src={videoDetails.thumbnailUrl} 
+                    alt="Video thumbnail" 
+                    className="img-fluid rounded"
+                    style={{ maxHeight: '200px' }}
+                  />
+                </div>
+              )}
+              
+              <div className="mb-3">
+                <strong>Title:</strong>
+                <div className="text-muted">{videoDetails.title}</div>
+              </div>
+              
+              <div className="mb-3">
+                <strong>Duration:</strong>
+                <div className="text-muted">{videoDetails.duration}</div>
+              </div>
+              
+              {videoDetails.fileSize && (
+                <div className="mb-3">
+                  <strong>File Size:</strong>
+                  <div className="text-muted">{videoDetails.fileSize.formatted}</div>
+                </div>
+              )}
+              
+              <div className="mb-3">
+                <strong>Destination:</strong>
+                <div className="text-muted">{folderName}</div>
+              </div>
+              
+              <Alert variant="info" className="mt-3">
+                <FaInfoCircle className="me-2" />
+                This video will be transferred directly to your Google Drive without downloading to your device.
+              </Alert>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowVideoDetailsModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleConfirmTransfer}>
+            <FaCloudUploadAlt className="me-2" />
+            Confirm Transfer
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       {/* Cancel confirmation modal */}
       {cancelConfirmationModal}
