@@ -1,0 +1,62 @@
+/* Custom styles for the App component */
+
+/* Background color for the page */
+body {
+  background-color: #f8f9fa;
+}
+
+/* Card styling */
+.card {
+  border-radius: 10px;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Button styling */
+.btn-primary {
+  background-color: #6366f1;
+  border-color: #6366f1;
+}
+
+.btn-primary:hover {
+  background-color: #4f46e5;
+  border-color: #4f46e5;
+}
+
+/* Form styling */
+.form-control:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.25);
+}
+
+/* Spinner animation */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* App header styling */
+h1 {
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.text-muted {
+  color: #6b7280 !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+}
